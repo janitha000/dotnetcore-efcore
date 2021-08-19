@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -74,7 +75,7 @@ namespace efcore.Controllers
             return Ok(courses);
         }
 
-        [HttpGet("{id}/explicit/officeassignment")]
+        [HttpGet("{id}/explicit/courses")]
         public async Task<ActionResult<IEnumerable<Course>>> GetOfficeAssignmentExplicit(int id)
         {
             var instructors = await _context.Instructors.ToListAsync();
@@ -88,6 +89,34 @@ namespace efcore.Controllers
 
             var courses = instructor.CourseAssignments.Select(c => c.Course);
             return Ok(courses);
+        }
+
+        [HttpGet("{id}/office-assignment")]
+        public async  Task<ActionResult<OfficeAssignment>> GetOfficeAssignment(int id)
+        {
+            var instructor = await _context.Instructors.Include(i => i.OfficeAssignment).AsNoTracking().SingleOrDefaultAsync(i => i.ID == id);
+            return Ok(instructor.OfficeAssignment);
+
+        }
+
+        [HttpPut("{id}/office-assignment")]
+        public async Task<ActionResult<Instructor>> UpdateInstructor(int id, Instructor updatedInstructor)
+        {
+            var instructorToUpdate = await _context.Instructors.Include(i => i.OfficeAssignment).FirstOrDefaultAsync(i => i.ID == id);
+            if(await TryUpdateModelAsync<Instructor>(
+                updatedInstructor,
+                "",
+                i => i.FirstName, i => i.LastName, i => i.HireDate, i => i.OfficeAssignment
+            ))
+            {
+                if(String.IsNullOrWhiteSpace(updatedInstructor.OfficeAssignment?.Location))
+                {
+                    updatedInstructor.OfficeAssignment = null;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(updatedInstructor);
         }
 
     }
